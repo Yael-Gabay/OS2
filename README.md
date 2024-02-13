@@ -19,3 +19,15 @@ First establish the full file path, this function receives the client's socket I
 + *void send_response(int client_socket, char * response):* This function is used to send responses to a client using a TCP connection. It receives the client's socket ID (client_socket) and the response we want to send, represented as a string (response).
 It uses the send function to send the response to the client. The function output is not required here. That is, the function simply sends the prepared response to the client through the layered TCP protocol that exists between the server and the client.
 
+### The main program: 
+This function is the main program of a simple TCP server that listens for connected requests, handles them, and provides an appropriate response. The function defines a variable root_dir that represents the main folder where the server will look for the files.
+Additionally defines variables such as server_socket, client_socket, server_addr and client_addr, which are used to manage the network connections and transfer the information between them. A new connection is opened using the socket function. We connect and enable with a specific connection using bind. The server starts listening for new connections using listen. If the operation fails, the program will exit with an error code.
+The function continues in an infinite loop that continues to the area of ​​receiving new connections.
+When a new connection is received, it is handled using the accept function. For each new connection, a new child process is created using fork. In the child process, the function closes the server connection and calls the handle_client function that handles requests from the client. After treatment, the child process is closed. The program will continue to listen for new connections.
+
+### BASE64
+BASE64 encoding is used in the POST instruction. In POST requests, the data is transferred more confidentially, unlike a GET request in which the file is transferred directly. and therefore may be encoded in BASE64. This encoding is an encoding method used to convert binary data into text that consists of ASCII characters. The encoding uses 64 different characters, including upper and lower case English letters, numbers, and special characters, so that any type of data can be displayed using characters that are part of the standard ASCII character set.
+
+## Part 1- client:
+
+
