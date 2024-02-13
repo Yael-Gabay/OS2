@@ -28,6 +28,40 @@ When a new connection is received, it is handled using the accept function. For 
 ### BASE64
 BASE64 encoding is used in the POST instruction. In POST requests, the data is transferred more confidentially, unlike a GET request in which the file is transferred directly. and therefore may be encoded in BASE64. This encoding is an encoding method used to convert binary data into text that consists of ASCII characters. The encoding uses 64 different characters, including upper and lower case English letters, numbers, and special characters, so that any type of data can be displayed using characters that are part of the standard ASCII character set.
 
-## Part 1- client:
+## Part 2- client:
+When downloading a file whose extension is .list it has a list of files. We will be interested in downloading all the files at the same time. In order to support simultaneous downloading, we will open several connections to the same server at the same time and receive data in all of them. We will support receiving data on several connections at the same time with the help of async i/o. 
+In this part we were asked to write a textual client that receives one parameter - what should be downloaded, with the help of argv The client will ask the server for the requested file. If a .list file was requested, it will request all the files appearing in the list at the same time.
+In the LIST files can appear at several addresses and the downloaded files will have to be base64 decoded and saved in a standard format.
+
+### Now we will explain about the client code:
+At the beginning of the code we defined constants that affect the conduct of the program.
++ PORT: Used to define the port where the client connects to the server.
++ BUFFER_SIZE: The size of the buffer used for reading and writing from or to the server.
+
+Then we defined some functions that are needed in the client program:
++ *void alloc_buffer(uv_handle_t * handle, size_t suggested_size, uv_buf_t * buf):* This function is used to allocate memory for the buffer where the data to be read from the stream will be allocated. It gets the recommended size for the buffer (suggested_size) and allocates memory for it using the malloc operation, then the function sets the uv_buf_t to point to the allocated buffer.
++ *void on_connect(uv_connect_t * connection, int status):* This function is activated as a response to the successful connection event. The connection parameter is a pointer to a structure of type uv_connect_t, which contains information about the connection. The status parameter indicates the connection result- if the connection was successful, status will be 0, otherwise there will be a non-zero value indicating a specific error. After that, the function uv_read_start activates a process of reading data from the connection and receives from it parameters that indicate the connection itself (connection->handle), the function that will be used to allocate memory for the data being read (alloc_buffer), and the function that will be executed when the data is read (on_read).
++ *void on_read(uv_stream_t * stream, ssize_t nread, const uv_buf_t * buf):* The uv_read_start function starts the reading from the stream linked to the connection and defines the alloc_buffer function as an allocation function for new buffers and in addition it activates on_read whose purpose is to process data received from the stream given to it as a parameter.
+The on_read function is called when reading from the connection is finished or when an error occurs in reading. It receives the stream from which the read was received, the amount of data read (nread), and the buffer in which the data was received (buf). The function first checks if the read was successful (in this case nread will be greater than zero). If so, it passes the data to the handle_response function in order to process it and frees the buffer it used. Finally the function closes the stream and activates the on_close function.
++ *void on_write(uv_write_t * request, int status):* The on_write function is a callback function that is activated when data is written to the stream. It receives two parameters:
+uv_write_t *request- This is the data structure that contains the details of the write request sent and int status- indicates the result of writing. If the write was successful, status will be 0. If there is a problem with the write, status will contain an appropriate error code and the function will free the memory received for the request using the free(request) function.
++ *void on_close(uv_handle_t * handle):* This function is executed when the connection to the server of type uv_handle_t is closed. The function prints a message that says "Connection closed".
++ *void send_request(uv_stream_t * stream, const char * request):* This function uses the libuv library to write data to a particular stream. It accepts as arguments the stream to write (uv_stream_t *stream) and the request to send (const char *request). The function creates a write_req_t type structure, which is a structure adapted for library communication. The structure contains functions and variables that are used to monitor the network connections and to read and write data from or to the server. Finally, the function calls uv_write to perform the write using the given stream.
++ *void handle_response(const char * response, const char * server_ip):* This function receives a response parameter from the server and its IP address and performs a simple test to determine if the response is a list of files or a simple file. If the response contains the ".list" notation, it accepts that the response is a list of files, so it calls the handle_file_list function. Otherwise, it contains the contents of the file itself, so simply prints the contents read from the response.
++ *void handle_file_list(const char * file_list, const char * server_ip, uv_loop_t * loop, uv_tcp_t * socket):* This function handles a list of files sent from the server. It receives the list as a parameter and the IP address of the server, the libuv event loop (loop), and the TCP socket where the connection with the server is managed.
+For each file in the list: It copies the original list (file_list) to a new string (file_list_copy) using the strdup function. The function uses strtok to break the string into separate filenames. For each filename, it builds a GET request to the server to get its content. The request is made using the send_request function.
+
+### The main program: 
+First the program applies values ​​to the server_ip and file_path variables that represent the IP address of the server and the path to the requested file on the server.
+After that, prepares a struct sockaddr_in type structure that represents the server address and the port to which the connection will be made, and creates a new TCP connection using the uv_tcp_init function. Using the uv_ip4_addr function, it fills the dest structure with the details of the server's IP address and port.
+The program establishes a real TCP connection to the server using the uv_tcp_connect function, where it passes the connection structure, the newly created socket structure, and the server address.
+The program constructs the request to the server using the snprintf function, which contains the requested file path and the server address, and sends it to the server using the send_request function.
+Finally, it runs libuv's main loop using the uv_run function, which handles receiving and handling IO-related events.
+
+Below is a photograph of a running example of the program:
+![WhatsApp Image 2024-02-12 at 14 31 27](https://github.com/Yael-Gabay/OS2/assets/93923600/d227da9a-306a-45dc-9b6b-9c05314a0777)
 
 
+### Collaborators
+- *Noam David*
+- *Yael Gabay*
