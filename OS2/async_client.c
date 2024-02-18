@@ -40,7 +40,7 @@ void on_connect(uv_connect_t *connection, int status) {
 
 void on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     if (nread > 0) {
-        printf("Received %ld bytes: %.*s\n", nread, (int)nread, buf->base);
+        printf("Received %ld bytes: \n%.*s\n", nread, (int)nread, buf->base);
 
         // Process received data here
         handle_response(buf->base, NULL);
