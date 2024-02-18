@@ -67,15 +67,30 @@ int main(int argc, char *argv[]) {
 
         printf("Received connection from %s\n", inet_ntoa(client_addr.sin_addr));
 
-        if (!fork()) {
+        int pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            continue;
+        }
+        if (pid == 0) { // Child process
             close(server_socket);
             handle_client(client_socket, root_dir);
             close(client_socket);
             exit(EXIT_SUCCESS);
+        } else { // Parent process
+            // Use fcntl to prevent zombie processes
+            int flags = fcntl(client_socket, F_GETFD); // Use client_socket instead of pid
+            if (flags == -1) {
+                perror("fcntl");
+                continue;
+            }
+            flags |= FD_CLOEXEC;
+            if (fcntl(client_socket, F_SETFD, flags) == -1) { // Use client_socket instead of pid
+                perror("fcntl");
+                continue;
+            }
+            close(client_socket);
         }
-
-        close(client_socket);
-        while(waitpid(-1, NULL, WNOHANG) > 0);
     }
 
     return 0;
@@ -87,6 +102,7 @@ void handle_client(int client_socket, char *root_dir) {
 
     if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
         perror("recv");
+        close(client_socket);
         return;
     }
 
@@ -101,6 +117,7 @@ void handle_client(int client_socket, char *root_dir) {
         handle_post_request(client_socket, remote_path, root_dir);
     } else {
         send_response(client_socket, "500 INTERNAL ERROR\r\n\r\n");
+        close(client_socket);
     }
 }
 
@@ -121,6 +138,7 @@ void handle_get_request(int client_socket, char *remote_path, char *root_dir) {
             perror("open");
             send_response(client_socket, "500 INTERNAL ERROR\r\n\r\n");
         }
+        close(client_socket);
         return;
     }
 
@@ -129,6 +147,7 @@ void handle_get_request(int client_socket, char *remote_path, char *root_dir) {
         perror("fstat");
         send_response(client_socket, "500 INTERNAL ERROR\r\n\r\n");
         close(file_fd);
+        close(client_socket);
         return;
     }
 
@@ -141,6 +160,7 @@ void handle_get_request(int client_socket, char *remote_path, char *root_dir) {
     while ((sent_bytes = sendfile(client_socket, file_fd, &offset, BUFFER_SIZE)) > 0 && offset < file_stat.st_size);
 
     close(file_fd);
+    close(client_socket);
 }
 
 
@@ -153,6 +173,7 @@ void handle_post_request(int client_socket, char *remote_path, char *root_dir) {
     memset(buffer, 0, BUFFER_SIZE);
     if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
         perror("recv");
+        close(client_socket);
         return;
     }
 
@@ -167,6 +188,7 @@ void handle_post_request(int client_socket, char *remote_path, char *root_dir) {
     if (!file) {
         perror("fopen");
         send_response(client_socket, "500 INTERNAL ERROR\r\n\r\n");
+        close(client_socket);
         return;
     }
 
@@ -180,6 +202,7 @@ void handle_post_request(int client_socket, char *remote_path, char *root_dir) {
     BIO_free_all(mem);
 
     send_response(client_socket, "200 OK\r\n\r\n");
+    close(client_socket);
 }
 
 void send_response(int client_socket, char *response) {
