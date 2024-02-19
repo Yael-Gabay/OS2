@@ -59,7 +59,8 @@ The program constructs the request to the server using the snprintf function, wh
 Finally, it runs libuv's main loop using the uv_run function, which handles receiving and handling IO-related events.
 
 Below is a photograph of a running example of the program:
-![WhatsApp Image 2024-02-12 at 14 31 27](https://github.com/Yael-Gabay/OS2/assets/93923600/d227da9a-306a-45dc-9b6b-9c05314a0777)
+![WhatsApp Image 2024-02-18 at 14 33 08](https://github.com/Yael-Gabay/OS2/assets/93923600/237b80aa-35cd-44b7-a9d3-86374c70629a)
+
 
 
 ### Collaborators
